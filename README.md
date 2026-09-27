@@ -1,73 +1,75 @@
-# 🎙️ Talk — The Instant Voice-First AI Decision Maker
+# 🎙️ TALK — A Decision Making Model Leveraging Laya and JEV.AI
 
-> **Settle any dilemma in milliseconds with statistically calibrated confidence, live WebGL visual presence, and deep context grounding.**
+<p align="center">
+  <img src="docs/assets/talk-main-decision.png" alt="TALK Decision OS Interface" width="850" style="border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);" />
+</p>
 
----
-
-## 🌟 Overview
-
-**Talk** is a voice-first decision assistant designed to eliminate decision paralysis. From everyday choices (*"Pizza vs Sushi"*, *"MacBook vs ThinkPad"*) to multi-factor corporate tradeoffs and document-backed evaluations, Talk delivers instant, calibrated verdicts with auditable reasoning.
-
-### ⚡ The Dual-Path Architecture
-Unlike traditional chatbots that force every question through slow, generative autoregressive loops (taking 3–8 seconds), Talk uses a **dual-path triage system**:
-
-```
-                       ┌─────────────────────────┐
-                       │  User Speaks / Inputs   │
-                       └────────────┬────────────┘
-                                    │
-                         [ Intelligent Triage ]
-                                    │
-           ┌────────────────────────┴────────────────────────┐
-           ▼                                                 ▼
-┌─────────────────────────┐                       ┌─────────────────────────┐
-│   System 1 (Instant)    │                       │  System 2 (Cloud LLM)   │
-│  Laya Engine (< 50ms)   │                       │   Research & Framing    │
-│  - Self-contained query │                       │  - Open-ended / Realtime│
-│  - Document-grounded    │                       │  - Web search grounding │
-│  - Direct probabilities │                       │  - Hands off to Laya    │
-└────────────┬────────────┘                       └────────────┬────────────┘
-             │                                                 │
-             └──────────────────────┬──────────────────────────┘
-                                    ▼
-                      ┌───────────────────────────┐
-                      │  Calibrated Output:       │
-                      │  • Verdict Badge & Flavor │
-                      │  • XYZ Reasoning Pillars  │
-                      │  • 3D Fluid Orb Reaction  │
-                      │  • Neural Voice Synthesis │
-                      └───────────────────────────┘
-```
+<p align="center">
+  <a href="https://github.com/navzar81-dev/TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-/stargazers"><img src="https://img.shields.io/github/stars/navzar81-dev/TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-?style=for-the-badge&color=6366f1" alt="Stars Badge"/></a>
+  <a href="https://github.com/navzar81-dev/TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-/network/members"><img src="https://img.shields.io/github/forks/navzar81-dev/TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-?style=for-the-badge&color=8b5cf6" alt="Forks Badge"/></a>
+  <a href="https://github.com/navzar81-dev/TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License"/></a>
+  <img src="https://img.shields.io/badge/Laya-JEV.AI%20Engine-10b981?style=for-the-badge" alt="Laya Engine"/>
+  <img src="https://img.shields.io/badge/React-19.2-61dafb?style=for-the-badge&logo=react" alt="React 19"/>
+  <img src="https://img.shields.io/badge/FastAPI-0.133-009688?style=for-the-badge&logo=fastapi" alt="FastAPI"/>
+</p>
 
 ---
 
-## 📸 Visual Showcase
+## 💡 Overview
+
+**TALK** is a voice-first decision operating system engineered to eliminate decision fatigue. Powered by **Laya** (the open-source JEV.AI non-autoregressive decision engine) and coupled with pluggable Cloud LLM research (Gemini API, Ollama, LM Studio), Talk provides instant, statistically calibrated choices with auditable reasoning and dynamic WebGL visual presence.
+
+Traditional generative LLMs take 3 to 8 seconds to generate long text answers with uncertain subjective biases. Talk decouples **decision calibration** from **text synthesis**:
+- **System 1 (Instant Laya Engine, < 50ms):** When presented with candidate choices or self-contained context, Laya evaluates the options in a single forward pass without autoregressive token generation.
+- **System 2 (On-Demand Cloud LLM Escalation):** If a query demands real-time external facts (e.g., current pricing, sports scores, live news), Talk routes to Gemini for web research, constructs the state, and hands it to Laya for final calibrated scoring.
+
+---
+
+## 🔮 Interactive Visual Tour
 
 ### 1. Main Decision Workspace & Calibrated Right Pane
-The interactive WebGL liquid orb dynamically reacts to voice frequencies and pipeline stages (`idle`, `listening`, `thinking`, `speaking`, `error`). The slide-out decision pane reveals calibrated confidence bars, verdict flavor badges, and 3-pillar XYZ reasoning.
+The WebGL liquid orb reacts in real-time to microphone audio and pipeline states (`idle`, `listening`, `thinking`, `speaking`, `error`). The slide-out pane reveals calibrated confidence bars, verdict flavor badges, and 3-pillar XYZ reasoning.
 
-![Talk Main Decision UI](docs/assets/talk-main-decision.png)
+![TALK Main Decision Workspace](docs/assets/talk-main-decision.png)
 
 ---
 
-### 2. Versus Duel Builder & Document Grounding
-Directly pit any two choices against each other, inject specific decision criteria, or drag-and-drop complex documentation (`.pdf`, `.docx`, `.xlsx`, `.csv`, `.json`, `.txt`) to anchor the decision with verified citations.
+### 2. Interactive Versus Duel Builder & Document Grounding
+Pit any two choices against each other, set custom constraints, or drag-and-drop complex documentation (`.pdf`, `.docx`, `.xlsx`, `.csv`, `.json`, `.txt`) to anchor decisions with verified citations.
 
 ![Versus Duel Builder](docs/assets/talk-versus-modal.png)
 
 ---
 
-### 3. Pluggable LLM Providers & Neural Voice Personas
-Easily switch between hosted cloud providers (Gemini API) and local LLMs (Ollama, LM Studio, or custom OpenAI-compatible endpoints) with live connection testing. Select from distinct neural voice personas (Jarvis, Nova, Executive, Puck, Charon).
+### 3. Pluggable LLM Connections & Neural Voice Personas
+Easily switch between cloud endpoints (Gemini API) and local LLMs (Ollama, LM Studio, or custom OpenAI-compatible endpoints) with latency testing. Select from distinct neural voice personas (Jarvis, Nova, Executive, Puck, Charon).
 
 ![Settings and Connections](docs/assets/talk-settings-modal.png)
+
+---
+
+## ⚡ Core Capabilities
+
+- 🎯 **Statistically Calibrated Confidence:** Non-autoregressive distribution output directly aligned with candidate probability.
+- 🏷️ **Verdict Flavor Badges:** Categorized confidence tiers:
+  - `≥ 90%`: **Absolute No-Brainer**
+  - `≥ 78%`: **Decisive Winner**
+  - `≥ 65%`: **Close Call / Leaning**
+  - `< 65%`: **Toss-Up / High Dilemma**
+- 🏛️ **3-Pillar XYZ Reasoning:** Deconstructs every decision into core analytical pillars:
+  1. *Primary Advantage / Craving Match*
+  2. *Execution Simplicity & Friction Index*
+  3. *Downside Risk Containment & Net Utility*
+- 📄 **Multi-Format Document Grounding:** Native parser for PDF, Word documents, Excel workbooks, CSVs, and JSON files to ground decisions on verified evidence.
+- 🎙️ **Low-Latency Neural TTS:** Edge-TTS streaming and Gemini Live Voice personas with Barge-in / Interruption handling.
+- 🎨 **HTML5 Canvas Social Badge Export:** 1-Click generation of high-resolution decision badges (`.png`) formatted for social sharing.
 
 ---
 
 ## 📁 Repository Structure
 
 ```
-TALK/
+TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-/
 ├── backend/                        # FastAPI Backend Application
 │   └── app/
 │       ├── main.py                 # FastAPI application, CORS, and API routes
@@ -88,71 +90,75 @@ TALK/
 │   │   │   ├── VersusModal.tsx     # 2-option duel builder with file upload
 │   │   │   └── SettingsModal.tsx   # LLM endpoints and voice persona configurator
 │   │   ├── utils/
-│   │   │   └── audio.ts            # Web Audio API real-time FFT analyzer
+│   │   │   ├── audio.ts            # Web Audio API real-time FFT analyzer
+│   │   │   └── cardExporter.ts     # High-DPI Canvas decision badge export (.png)
 │   │   ├── types.ts                # TypeScript interfaces and telemetry contracts
 │   │   └── main.tsx                # React DOM entry point
-│   ├── index.html                  # HTML5 template with Google Inter/Outfit fonts
 │   ├── vite.config.ts              # Vite server configuration (Strict Port: 5190)
 │   └── package.json                # Frontend dependencies
 │
 ├── docs/                           # Documentation & Assets
-│   └── assets/                     # High-resolution UI screenshots & badges
+│   └── assets/                     # High-resolution screenshots & badges
 │
 ├── start-dev.bat                   # 1-Click Windows batch script to launch both servers
 ├── start-dev.ps1                   # 1-Click PowerShell launcher script
 ├── talk-app-prd.md                 # Product Requirements Document & specs
 ├── .gitignore                      # Git exclusion rules
-└── README.md                       # Comprehensive project documentation
+└── README.md                       # Complete end-to-end documentation
 ```
 
 ---
 
-## 🔌 Dedicated Port Allocation
+## 🔌 Port Allocation & Isolation
 
-To prevent network port collisions with local voice services and existing tools, Talk isolates its network boundaries:
+Talk strictly isolates its network boundaries to avoid collisions with other audio or AI runtimes:
 
 | Service | Port | Endpoint URL | Purpose |
 |---|---|---|---|
-| **Frontend UI** | `5190` | `http://localhost:5190` | Vite React development server (isolated strict port) |
+| **Frontend UI** | `5190` | `http://localhost:5190` | Vite React development server |
 | **Backend API** | `8001` | `http://127.0.0.1:8001` | FastAPI orchestration, document parsing, TTS streaming |
-| **Laya Service** | `8000` | `http://localhost:8000` | Self-hosted Laya typed decision engine (optional / fallback active) |
+| **Laya Service** | `8000` | `http://localhost:8000` | Laya typed-decision engine (optional / fallback active) |
 
 ---
 
-## 🚀 Quick Setup & Getting Started
+## 🚀 Quick Setup & Installation
 
-### Prerequisites
-- **Python**: 3.10 or higher
-- **Node.js**: v18.0.0 or higher (`npm` included)
-- **Git**
+### 1. Clone the Repository
+```bash
+git clone https://github.com/navzar81-dev/TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-.git
+cd TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-
+```
+
+### 2. Prerequisites
+- **Python**: 3.10+
+- **Node.js**: v18.0.0+ (`npm` included)
 
 ---
 
-### Method A: 1-Click Automated Launch (Recommended)
+### Option A: 1-Click Automated Launch (Windows)
 
-From the project root directory (`TALK`):
+From the project root:
 
-**Via Command Prompt or PowerShell:**
+**Command Prompt / PowerShell:**
 ```powershell
 .\start-dev.bat
 ```
-*Or using PowerShell script:*
+*Or with PowerShell script:*
 ```powershell
 .\start-dev.ps1
 ```
 
-This automatically launches two dedicated windows running the Backend (port 8001) and Frontend (port 5190).
+This immediately spins up both development servers in separate, dedicated terminal windows!
 
 ---
 
-### Method B: Manual Step-by-Step Launch
+### Option B: Manual Step-by-Step Setup
 
 #### 1. Backend Setup
-Open a terminal in `backend/`:
 ```bash
 cd backend
 
-# Install dependencies (if not already installed)
+# Install required Python dependencies
 pip install fastapi uvicorn httpx pydantic pdfplumber python-docx openpyxl edge-tts
 
 # Start the FastAPI server on port 8001
@@ -165,44 +171,19 @@ curl http://127.0.0.1:8001/api/health
 ```
 
 #### 2. Frontend Setup
-Open a second terminal in `frontend/`:
+In a second terminal:
 ```bash
 cd frontend
 
 # Install Node dependencies
 npm install
 
-# Start Vite dev server on port 5190
+# Start Vite dev server on isolated port 5190
 npm run dev
 ```
 
-Open your browser and navigate to:
+Open your browser at:
 👉 **`http://localhost:5190`**
-
----
-
-## 🧠 Key Features Deep Dive
-
-### 1. Statistical Confidence Calibration
-Laya provides non-autoregressive typed scoring over questions rather than unstructured text tokens:
-- **`choice`**: Normalized categorical distribution with exact winner matching.
-- **`verdict_flavor`**: Categorized confidence thresholds:
-  - `≥ 90%`: **Absolute No-Brainer**
-  - `≥ 78%`: **Decisive Winner**
-  - `≥ 65%`: **Close Call / Leaning**
-  - `< 65%`: **Toss-Up / High Dilemma**
-
-### 2. Tailored XYZ Reasoning Pillars
-Every decision automatically structures three critical analytical pillars:
-1. **Primary Advantage / Craving Alignment:** Core payoff differentiator.
-2. **Execution Simplicity & Friction:** Operational overhead vs. alternatives.
-3. **Downside Risk & Net Utility:** Long-term regret minimization.
-
-### 3. Document Parser & Grounding Engine
-Upload job offer comparisons, financial spreadsheets, lease agreements, or technical specs. Talk extracts the relevant excerpts, verifies context against the candidates, and appends citations directly to the decision payload.
-
-### 4. High-Resolution Social Share Badge
-Click **Export Badge** in the right pane to render a custom high-DPI HTML5 canvas decision badge (`.png`) formatted with gradient borders, calibrated percentage rings, and reasoning highlights.
 
 ---
 
@@ -210,48 +191,47 @@ Click **Export Badge** in the right pane to render a custom high-DPI HTML5 canva
 
 ### Health Check
 - **`GET /api/health`**
-- Returns backend operational status, active LLM connection, and voice provider.
+- Returns backend operational status, active LLM connection, and active voice persona.
 
-### Process Decision Turn
+### Decision Pipeline (Process Turn)
 - **`POST /api/talk`**
-- Request Body:
+- Request:
   ```json
   {
-    "text": "MacBook Pro M4 vs ThinkPad X1 Carbon for full-stack engineering?",
-    "session_id": "session-123",
+    "text": "MacBook Pro M4 vs ThinkPad X1 Carbon for software engineering?",
+    "session_id": "session-default",
     "document_text": null
   }
   ```
-- Returns: `TalkResponse` including `triage`, `spoken_answer`, `laya_result`, `visual_payload`, and `stage2_telemetry`.
+- Response: Returns `TalkResponse` with triage classification, spoken answer, calibrated confidence, verdict flavor, XYZ reasoning, and telemetry metrics.
 
-### Parse Grounding Document
+### Document Parsing & Grounding
 - **`POST /api/documents/parse`**
-- Multipart Form:
-  - `file`: Binary document (`.pdf`, `.docx`, `.xlsx`, `.csv`, `.json`, `.txt`)
-  - `option_a`: (Optional) Candidate A override
-  - `option_b`: (Optional) Candidate B override
+- Multipart Form: Accepts `.pdf`, `.docx`, `.xlsx`, `.csv`, `.json`, `.txt` files with optional option overrides.
 
-### Voice Synthesis
+### Neural Audio Synthesis
 - **`POST /api/voice/speak`**
-- Streams real-time MP3 neural audio for spoken responses.
+- Streams real-time MP3 neural audio response for playback.
 
 ---
 
-## 🛠️ Testing & Quality Assurance
+## 🛠️ Validation & Testing
 
-- **Type Check & Lint:**
-  ```bash
-  cd frontend
-  npm run build
-  npm run lint
-  ```
-- **Backend Sanity Test:**
-  ```bash
-  cd backend
-  python -c "from app.main import app; print('Backend loaded successfully!')"
-  ```
+```bash
+# Frontend build & lint
+cd frontend
+npm run build
+npm run lint
+
+# Backend sanity check
+cd backend
+python -c "from app.main import app; print('Backend loaded successfully!')"
+```
 
 ---
 
 ## 📄 License
-This project is open-source under the [Apache 2.0 License](LICENSE).
+Distributed under the [Apache 2.0 License](LICENSE).
+
+## 🤝 Contributing
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/navzar81-dev/TALK---A-Decision-Making-Model-Leveraging-Laya-and-Jev-/issues).
