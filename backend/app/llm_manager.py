@@ -333,15 +333,25 @@ class LLMManager:
                 pass
 
         # High-Fidelity Dynamic Semantic Framing Engine (Fallback / Ultra-fast <10ms)
-        # 1. Check for explicit options in user query: "A or B", "between X and Y", "choose A, B, or C"
+        # 1. Check for explicit options in user query: "A vs B", "A or B", "between X and Y", "choose A, B, or C"
         extracted_options = []
-        or_match = re.search(r"between (.+?) and (.+?)(\?|\.|$)", query_text, re.IGNORECASE)
-        if or_match:
-            extracted_options = [or_match.group(1).strip(), or_match.group(2).strip()]
+        vs_match = re.search(r"(.+?)\s+(?:vs\.?|versus)\s+(.+?)(?:\s+(?:for|in|tonight).*)?(\?|\.|$)", query_text, re.IGNORECASE)
+        if vs_match:
+            opt1 = re.sub(r"^(?:compare\s+|which\s+is\s+better,?\s+)?", "", vs_match.group(1).strip(), flags=re.IGNORECASE)
+            extracted_options = [opt1, vs_match.group(2).strip()]
         else:
-            list_match = re.search(r"choose from (.+?)(\?|\.|$)", query_text, re.IGNORECASE)
-            if list_match:
-                extracted_options = [opt.strip() for opt in list_match.group(1).split(",") if opt.strip()]
+            between_match = re.search(r"between\s+(.+?)\s+and\s+(.+?)(?:\s+(?:for|in|tonight).*)?(\?|\.|$)", query_text, re.IGNORECASE)
+            if between_match:
+                extracted_options = [between_match.group(1).strip(), between_match.group(2).strip()]
+            else:
+                or_match = re.search(r"(?:should\s+(?:i|we)\s+)?(.+?)\s+or\s+(.+?)(?:\s+(?:for|in|tonight).*)?(\?|\.|$)", query_text, re.IGNORECASE)
+                if or_match:
+                    opt1 = re.sub(r"^(?:choose|pick|prefer|decide between)\s+", "", or_match.group(1).strip(), flags=re.IGNORECASE)
+                    extracted_options = [opt1, or_match.group(2).strip()]
+                else:
+                    list_match = re.search(r"choose from (.+?)(\?|\.|$)", query_text, re.IGNORECASE)
+                    if list_match:
+                        extracted_options = [opt.strip() for opt in list_match.group(1).split(",") if opt.strip()]
 
         # 2. Check for binary approval (noul)
         is_binary = any(k in text_lower for k in [
@@ -385,9 +395,9 @@ class LLMManager:
 
         elif is_multi_criteria or (len(extracted_options) >= 2 and any(w in text_lower for w in ["tradeoff", "compare", "criteria"])):
             options = extracted_options if len(extracted_options) >= 2 else [
-                "Option Alpha: Fast Direct Rollout",
-                "Option Beta: Phased Canary Pilot",
-                "Option Gamma: Blue-Green Deployment"
+                "Strategy A: Direct Rollout",
+                "Strategy B: Phased Canary Pilot",
+                "Strategy C: Parallel Execution"
             ]
             criteria = criteria_pref or [
                 "Latency & SLA Performance",
@@ -435,7 +445,11 @@ class LLMManager:
             elif "schedule" in text_lower or "batch" in text_lower or "training" in text_lower:
                 options = ["Batch A: Immediate Priority Run", "Batch B: Off-Peak Evening Sync", "Batch C: Dynamic Burst"]
             else:
-                options = ["Option Alpha: Aggressive Rollout", "Option Beta: Phased Pilot", "Option Gamma: Baseline Retention"]
+                words = [w for w in re.findall(r"[A-Za-z0-9]+", query_text) if len(w) > 3 and w.lower() not in ["should", "would", "could", "please", "choose", "decide", "between", "which", "better", "project", "next"]]
+                if len(words) >= 2:
+                    options = [words[0].capitalize(), words[1].capitalize()]
+                else:
+                    options = ["Primary Candidate", "Secondary Alternative"]
 
             initial_count = len(options)
             if "25" in text_lower or "all candidates" in text_lower:

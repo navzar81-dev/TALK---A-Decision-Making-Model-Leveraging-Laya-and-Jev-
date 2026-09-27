@@ -1,0 +1,107 @@
+{
+  "risk_tolerance": "balanced",
+  "hedging_threshold": 0.78,
+  "rules": [
+    {
+      "id": "rule-tech-sample",
+      "name": "Tech Hardware & Developer Gear",
+      "priority": 1,
+      "domain_keywords": [
+        "macbook",
+        "laptop",
+        "thinkpad",
+        "m4",
+        "gpu",
+        "framework",
+        "keyboard",
+        "monitor"
+      ],
+      "decision_type": "choice",
+      "criteria": [
+        "Developer Ergonomics & Workflow",
+        "Battery Endurance & Portability",
+        "Sustained Thermal Performance",
+        "Resale Value & Longevity"
+      ],
+      "steering_prompt": "Prioritize developer ergonomics, battery endurance, and unified memory bandwidth over raw peak synthetic clock speeds.",
+      "requires_research": false,
+      "is_active": true
+    },
+    {
+      "id": "rule-career-sample",
+      "name": "Career & Startup Bets",
+      "priority": 2,
+      "domain_keywords": [
+        "career",
+        "startup",
+        "corporate",
+        "job",
+        "offer",
+        "equity",
+        "salary",
+        "founder",
+        "hiring"
+      ],
+      "decision_type": "multi_criteria",
+      "criteria": [
+        "Long-Term Career Leverage & Compounding",
+        "Equity Upside vs Downside Safety",
+        "Learning Velocity & Autonomy",
+        "Work-Life Sustainability"
+      ],
+      "steering_prompt": "Favor asymmetric learning upside, equity growth potential, and direct agency over comfortable corporate bureaucracy.",
+      "requires_research": false,
+      "is_active": true
+    },
+    {
+      "id": "rule-food-sample",
+      "name": "Daily Dining & Satiety",
+      "priority": 3,
+      "domain_keywords": [
+        "pizza",
+        "sushi",
+        "eat",
+        "food",
+        "cook",
+        "order",
+        "dinner",
+        "lunch",
+        "restaurant"
+      ],
+      "decision_type": "choice",
+      "criteria": [
+        "Immediate Craving & Flavor Match",
+        "Preparation Speed & Delivery Friction",
+        "Post-Meal Alertness & Net Utility"
+      ],
+      "steering_prompt": "Balance immediate craving satisfaction with post-meal digestive energy and mental clarity.",
+      "requires_research": false,
+      "is_active": true
+    },
+    {
+      "id": "rule-fitness-sample",
+      "name": "Fitness & Physical Recovery",
+      "priority": 4,
+      "domain_keywords": [
+        "gym",
+        "workout",
+        "sleep",
+        "rest",
+        "diet",
+        "run",
+        "lift",
+        "training",
+        "exercise"
+      ],
+      "decision_type": "choice",
+      "criteria": [
+        "Habit Compounding Payoff",
+        "Systemic Fatigue vs Recovery State",
+        "Injury Prevention & Longevity"
+      ],
+      "steering_prompt": "Compound positive momentum; if systemic fatigue is dangerously high, prioritize strategic restorative recovery.",
+      "requires_research": false,
+      "is_active": true
+    }
+  ]
+}

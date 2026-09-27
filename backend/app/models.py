@@ -70,6 +70,7 @@ class VisualPayload(BaseModel):
     confidence: float
     summary: str
     verdict_flavor: Optional[str] = None
+    basis_name: Optional[str] = Field(default=None, description="Active user-configured rule/basis that steered this decision")
     reasoning_pillars: List[str] = Field(default_factory=list)
     items: List[VisualItem] = Field(default_factory=list)
     citations: List[Citation] = Field(default_factory=list)
@@ -140,3 +141,33 @@ class VoiceSpeakRequest(BaseModel):
 class VoiceAuditionRequest(BaseModel):
     provider_id: str
     voice_id: str
+
+class ClassificationRule(BaseModel):
+    id: str
+    name: str
+    priority: int = Field(default=1, description="Priority rank: 1 is highest priority. Ties broken by keyword specificity.")
+    domain_keywords: List[str] = Field(default_factory=list, description="Keywords that trigger this rule")
+    decision_type: Literal["choice", "multi_criteria", "noul", "score"] = "choice"
+    criteria: List[str] = Field(default_factory=list, description="Explicit evaluation dimensions / rubric criteria")
+    steering_prompt: str = Field(description="Custom bias, heuristic guidance, or decision philosophy")
+    requires_research: bool = Field(default=False, description="If True, mandates LLM web search handoff for context gathering")
+    is_active: bool = True
+
+class ClassificationSettings(BaseModel):
+    risk_tolerance: Literal["conservative", "balanced", "aggressive"] = "balanced"
+    hedging_threshold: float = Field(default=0.78, ge=0.5, le=0.95, description="Confidence threshold below which Laya hedges or marks close call")
+    rules: List[ClassificationRule] = Field(default_factory=list)
+
+class RuleSuggestionRequest(BaseModel):
+    query: str
+
+class RuleSuggestionResponse(BaseModel):
+    name: str
+    domain_keywords: List[str]
+    decision_type: Literal["choice", "multi_criteria", "noul", "score"]
+    criteria: List[str]
+    steering_prompt: str
+    priority: int = 1
+    requires_research: bool = False
+    reasoning: str
+

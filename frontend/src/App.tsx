@@ -15,7 +15,10 @@ import type {
   LayaFramedQuestion,
   Stage2Telemetry,
   VoiceProviderConfig,
-  ParsedDocument
+  ParsedDocument,
+  ClassificationRule,
+  ClassificationSettings,
+  RuleSuggestionResponse
 } from './types';
 import {
   Mic,
@@ -54,13 +57,14 @@ export const App: React.FC = () => {
   const [activeConnectionId, setActiveConnectionId] = useState<string>('gemini-default');
   const [voiceProviders, setVoiceProviders] = useState<VoiceProviderConfig[]>([]);
   const [activeVoiceId, setActiveVoiceId] = useState<string>('edge-neural');
+  const [classificationSettings, setClassificationSettings] = useState<ClassificationSettings | null>(null);
 
   const audioEngine = useRef(new AudioEngine()).current;
   const recognitionRef = useRef<any>(null);
   const latestTranscriptRef = useRef<string>('');
   const levelLoopRef = useRef<number | null>(null);
 
-  // Fetch initial connection configs and voice providers
+  // Fetch initial connection configs, voice providers, and classification rules
   useEffect(() => {
     fetch(`${BACKEND_URL}/api/connections`)
       .then((r) => r.json())
@@ -77,6 +81,13 @@ export const App: React.FC = () => {
         if (data.active_id) setActiveVoiceId(data.active_id);
       })
       .catch((e) => console.log('Backend voice providers not reachable yet:', e));
+
+    fetch(`${BACKEND_URL}/api/classification/rules`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.rules) setClassificationSettings(data);
+      })
+      .catch((e) => console.log('Backend classification rules not reachable yet:', e));
   }, []);
 
   // Audio band polling when mic is active or audio is playing
@@ -409,6 +420,59 @@ export const App: React.FC = () => {
     }
   };
 
+  const saveRuleHandler = async (rule: ClassificationRule) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/classification/rules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rule),
+      });
+      const data = await res.json();
+      if (data.settings) setClassificationSettings(data.settings);
+    } catch (e) {
+      console.error('Failed to save classification rule:', e);
+    }
+  };
+
+  const deleteRuleHandler = async (ruleId: string) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/classification/rules/${ruleId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setClassificationSettings((prev) =>
+          prev ? { ...prev, rules: prev.rules.filter((r) => r.id !== ruleId) } : null
+        );
+      }
+    } catch (e) {
+      console.error('Failed to delete classification rule:', e);
+    }
+  };
+
+  const updateSettingsHandler = async (settings: ClassificationSettings) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/classification/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const data = await res.json();
+      if (data.settings) setClassificationSettings(data.settings);
+    } catch (e) {
+      console.error('Failed to update classification settings:', e);
+    }
+  };
+
+  const suggestRuleHandler = async (query: string): Promise<RuleSuggestionResponse> => {
+    const res = await fetch(`${BACKEND_URL}/api/classification/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) throw new Error('Suggestion generation failed');
+    return await res.json();
+  };
+
   return (
     <div className={`app-root ${isRightPaneOpen ? 'with-pane' : ''}`}>
       {/* Top Ambient Bar */}
@@ -464,7 +528,7 @@ export const App: React.FC = () => {
       </header>
 
       {/* Main Experience Viewport */}
-      <main className="orb-stage">
+      <main className={`orb-stage orb-stage-${orbState}`}>
         <div className="orb-centerpiece">
           <LiquidOrb
             state={orbState}
@@ -486,27 +550,45 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {/* Subtitle / Transcript Under Orb */}
-          <div className="transcript-hud">
-            {transcript ? (
-              <p className="transcript-text">{transcript}</p>
-            ) : (
-              <p className="transcript-placeholder">
-                Speak or select a decision below. Click the orb or microphone to start.
-              </p>
-            )}
+          {/* Holographic Oracle Plinth (HUD) */}
+          <div className="oracle-plinth">
+            <div className="plinth-waveform" aria-hidden="true">
+              <span className="wave-bar" style={{ height: `${Math.max(6, Math.min(26, (audioBands.low + audioBands.all) * 24))}px` }} />
+              <span className="wave-bar" style={{ height: `${Math.max(8, Math.min(32, (audioBands.mid + audioBands.all) * 30))}px` }} />
+              <span className="wave-bar" style={{ height: `${Math.max(6, Math.min(22, (audioBands.high + audioBands.all) * 20))}px` }} />
+            </div>
+
+            <div className="transcript-hud">
+              {transcript ? (
+                <p className="transcript-text">{transcript}</p>
+              ) : (
+                <p className="transcript-placeholder">
+                  Inscribe a dilemma below or speak to consult the calibrated core.
+                </p>
+              )}
+            </div>
+
+            <div className="plinth-waveform" aria-hidden="true">
+              <span className="wave-bar" style={{ height: `${Math.max(6, Math.min(22, (audioBands.high + audioBands.all) * 20))}px` }} />
+              <span className="wave-bar" style={{ height: `${Math.max(8, Math.min(32, (audioBands.mid + audioBands.all) * 30))}px` }} />
+              <span className="wave-bar" style={{ height: `${Math.max(6, Math.min(26, (audioBands.low + audioBands.all) * 24))}px` }} />
+            </div>
           </div>
 
-          {/* Voice & Barge-in Controls */}
+          {/* Concentric Gyroscope Voice Node & Barge-in Controls */}
           <div className="floating-voice-controls">
-            <button
-              id="mic-toggle-btn"
-              className={`mic-orb-btn ${isMicActive ? 'listening' : ''}`}
-              onClick={toggleMicrophone}
-              title={isMicActive ? 'Mute Microphone' : 'Start Continuous Voice'}
-            >
-              {isMicActive ? <MicOff size={22} /> : <Mic size={22} />}
-            </button>
+            <div className="gyro-voice-deck">
+              <div className="gyro-outer-ring" />
+              <div className="gyro-mid-ring" />
+              <button
+                id="mic-toggle-btn"
+                className={`mic-orb-btn ${isMicActive ? 'listening' : ''}`}
+                onClick={toggleMicrophone}
+                title={isMicActive ? 'Mute Microphone' : 'Start Continuous Voice'}
+              >
+                {isMicActive ? <MicOff size={22} /> : <Mic size={22} />}
+              </button>
+            </div>
 
             {orbState === 'speaking' && (
               <button
@@ -521,53 +603,60 @@ export const App: React.FC = () => {
             )}
           </div>
 
-          {/* Quick Dilemma Prompts */}
+          {/* Dilemma Prism Tablets */}
           <div className="pilot-prompts-bar">
             <span className="pilot-label">INSTANT DILEMMAS:</span>
             <button
               id="chip-versus-builder"
-              className="prompt-chip prompt-chip-versus"
+              className="prompt-chip prompt-chip-versus prompt-chip-gold"
               onClick={() => setIsVersusOpen(true)}
               title="Open custom 2-option duel builder"
             >
-              ⚔️ Duel Builder
+              <span className="chip-badge">DUEL</span>
+              <span>⚔️ Duel Builder</span>
             </button>
             <button
               className="prompt-chip"
               onClick={() => executeDecisionPipeline('Pizza or Sushi tonight?')}
             >
-              🍕 Pizza vs Sushi
+              <span className="chip-badge">DAILY</span>
+              <span>🍕 Pizza vs Sushi</span>
             </button>
             <button
               className="prompt-chip"
               onClick={() => executeDecisionPipeline('Is pineapple on pizza acceptable or a crime?')}
             >
-              ⚔️ Pineapple on Pizza?
+              <span className="chip-badge">DEBATE</span>
+              <span>⚔️ Pineapple on Pizza?</span>
             </button>
             <button
               className="prompt-chip"
               onClick={() => executeDecisionPipeline('MacBook Pro M4 vs ThinkPad X1 Carbon for dev?')}
             >
-              💻 MacBook vs ThinkPad
+              <span className="chip-badge">TECH</span>
+              <span>💻 MacBook vs ThinkPad</span>
             </button>
             <button
               className="prompt-chip"
               onClick={() => executeDecisionPipeline('Hit the gym right now or take a rest day?')}
             >
-              🏃 Gym vs Rest Day
+              <span className="chip-badge">FITNESS</span>
+              <span>🏃 Gym vs Rest Day</span>
             </button>
             <button
               className="prompt-chip"
               onClick={() => executeDecisionPipeline('Stay at corporate job or join an early-stage startup?')}
             >
-              🚀 Corporate vs Startup
+              <span className="chip-badge">CAREER</span>
+              <span>🚀 Corporate vs Startup</span>
             </button>
             <button
               className="prompt-chip prompt-chip-research"
               onClick={() => executeDecisionPipeline('Who will win the finals tonight?')}
               title="Triggers Cloud Research Escalation"
             >
-              🌐 Who will win tonight? (Web)
+              <span className="chip-badge">RESEARCH</span>
+              <span>🌐 Finals (Web)</span>
             </button>
           </div>
         </div>
@@ -578,10 +667,11 @@ export const App: React.FC = () => {
             <input
               id="text-decision-input"
               type="text"
-              placeholder="Ask any dilemma or choice (e.g. 'Pizza or Sushi?', 'Should I buy a PS5 or PC?')..."
+              placeholder="Inscribe any dilemma or choice (e.g. 'Pizza or Sushi?', 'MacBook vs ThinkPad?')..."
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
             />
+            <span className="kbd-cue">↵ Consult</span>
             <button id="submit-text-btn" type="submit" className="submit-btn" disabled={!textInput.trim()}>
               <Send size={15} />
             </button>
@@ -613,6 +703,11 @@ export const App: React.FC = () => {
         activeVoiceId={activeVoiceId}
         onSelectVoiceProvider={setDefaultVoiceHandler}
         onAuditionVoice={auditionVoiceHandler}
+        classificationSettings={classificationSettings}
+        onSaveRule={saveRuleHandler}
+        onDeleteRule={deleteRuleHandler}
+        onUpdateSettings={updateSettingsHandler}
+        onSuggestRule={suggestRuleHandler}
       />
 
       {/* Versus Duel Builder Modal */}

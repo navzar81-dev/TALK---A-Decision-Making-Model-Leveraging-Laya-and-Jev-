@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type { VisualPayload, LayaDecisionResult, LayaFramedQuestion, Stage2Telemetry } from '../types';
 import {
   ChevronRight,
-  Award,
   ShieldAlert,
   CheckCircle2,
   ExternalLink,
@@ -132,17 +131,48 @@ export const RightPane: React.FC<RightPaneProps> = ({
           </div>
         )}
 
-        {/* Highlight Winner Banner */}
+        {/* Highlight Winner Banner - Clean, Simple, Majestic (No Crown) */}
         <div className={`decision-banner ${isHedged ? 'banner-hedged' : 'banner-confident'}`}>
-          <div className="banner-icon">
-            <Award size={24} />
+          <div className="banner-header-row">
+            <span className="verdict-tag-label">{isHedged ? 'PROBABILISTIC ARBITRATION' : 'CALIBRATED VERDICT'}</span>
+            <span className="banner-flavor-pill">{flavor}</span>
           </div>
-          <div className="banner-text">
-            <div className="banner-winner-row">
-              <span className="banner-winner">{payload.decision_badge}</span>
-              <span className="banner-flavor-pill">{flavor}</span>
+
+          {payload.basis_name && (
+            <div className="banner-basis-pill" title={`Arbitrated under '${payload.basis_name}' basis`}>
+              <span className="basis-icon">⚖️</span>
+              <span className="basis-label">ARBITRATION BASIS:</span>
+              <span className="basis-value">{payload.basis_name}</span>
             </div>
-            <div className="banner-explanation">{payload.summary}</div>
+          )}
+
+          <h3 className="banner-winner-title">{payload.decision_badge}</h3>
+
+          <div className="banner-certainty-badge">
+            <span className="certainty-num">{confPercent}%</span>
+            <span className="certainty-dot">•</span>
+            <span className="certainty-label">{isHedged ? 'Calibrated Lead' : 'Statistical Majority'}</span>
+          </div>
+
+          <p className="banner-explanation">{payload.summary}</p>
+
+          {/* Precision Arcometer Calibration Bar */}
+          <div className="arcometer-container">
+            <div className="arcometer-header">
+              <span>CALIBRATED PROBABILITY</span>
+              <span className="arcometer-val">{(confPercent / 100).toFixed(3)} / 1.000</span>
+            </div>
+            <div className="arcometer-bar-wrapper">
+              <div className="arcometer-fill" style={{ width: `${confPercent}%` }} />
+            </div>
+            <div className="arcometer-ticks">
+              <span>0%</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span className="arcometer-active-tick">{confPercent}%</span>
+              <span>100%</span>
+            </div>
           </div>
         </div>
 
@@ -151,18 +181,20 @@ export const RightPane: React.FC<RightPaneProps> = ({
           <div className="reasoning-pillars-card">
             <div className="pillars-header">
               <Sparkles size={14} className="pillars-icon" />
-              <span>WHY LAYA DECIDED THIS (XYZ REASONING)</span>
+              <span>WHY LAYA DECIDED THIS (ARBITRATION PILLARS)</span>
             </div>
             <ul className="pillars-list">
               {pillars.map((pillar, pIdx) => {
                 const parts = pillar.split(':');
                 const title = parts.length > 1 ? parts[0] : `Point ${pIdx + 1}`;
                 const detail = parts.length > 1 ? parts.slice(1).join(':') : pillar;
+                const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+                const num = romanNumerals[pIdx] || `${pIdx + 1}`;
                 return (
                   <li key={pIdx} className="pillar-item">
-                    <span className="pillar-dot" />
-                    <div>
-                      <strong>{title}:</strong> {detail}
+                    <span className="pillar-num">{num}</span>
+                    <div className="pillar-text-group">
+                      <strong className="pillar-lead">{title}:</strong> {detail}
                     </div>
                   </li>
                 );

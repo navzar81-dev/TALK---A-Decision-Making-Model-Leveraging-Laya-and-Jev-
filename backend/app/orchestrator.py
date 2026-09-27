@@ -1,18 +1,20 @@
 import time
 import random
 import re
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from .models import (
     TalkRequest, TalkResponse, QueryTriage, LayaFramedQuestion,
-    LayaDecisionResult, VisualPayload, VisualItem, Citation
+    LayaDecisionResult, VisualPayload, VisualItem, Citation, ClassificationRule
 )
 from .laya_service import LayaService
 from .llm_manager import LLMManager
+from .classification_service import ClassificationService
 
 class TalkOrchestrator:
-    def __init__(self, laya_service: LayaService, llm_manager: LLMManager):
+    def __init__(self, laya_service: LayaService, llm_manager: LLMManager, classification_service: Optional[ClassificationService] = None):
         self.laya = laya_service
         self.llm = llm_manager
+        self.classification_svc = classification_service or ClassificationService()
 
     def extract_options_and_check_context(self, text: str) -> Tuple[List[str], bool, str]:
         """
@@ -34,26 +36,46 @@ class TalkOrchestrator:
         if needs_research:
             return ([], False, "research_needed")
 
+        # Check if user-configured classification rule mandates web search/research handoff
+        rule = self.classification_svc.find_matching_rule(cleaned)
+        if rule and rule.requires_research:
+            return ([], False, "research_needed")
+
+        # Strip conversational prefixes
+        cleaned_core = re.sub(
+            r"^(?:can\s+you\s+)?(?:please\s+)?(?:help\s+me\s+)?(?:decide|choose|pick|tell\s+me)\s+(?:between\s+|whether\s+to\s+|which\s+is\s+better,?\s+)?",
+            "",
+            cleaned,
+            flags=re.IGNORECASE
+        ).strip()
+
         # 1. Regex pattern: "X vs Y" or "X versus Y"
-        vs_match = re.search(r"^(?:compare\s+|which\s+is\s+better,?\s+)?(.+?)\s+(?:vs\.?|versus)\s+(.+?)(?:\s+for\s+.+)?$", cleaned, re.IGNORECASE)
+        vs_match = re.search(r"^(?:compare\s+|which\s+is\s+better,?\s+)?(.+?)\s+(?:vs\.?|versus)\s+(.+?)(?:\s+(?:for|in|tonight).*)?$", cleaned_core, re.IGNORECASE)
         if vs_match:
             opt1, opt2 = vs_match.group(1).strip(), vs_match.group(2).strip()
             return ([opt1, opt2], True, "choice")
 
-        # 2. Regex pattern: "Should I X or Y?" or "X or Y?"
-        or_match = re.search(r"^(?:should\s+(?:i|we)\s+)?(.+?)\s+or\s+(.+?)$", cleaned, re.IGNORECASE)
+        # 2. Regex pattern: "between X and Y"
+        between_match = re.search(r"(?:between\s+)?(.+?)\s+and\s+(.+?)(?:\s+(?:for|in|tonight).*)?$", cleaned_core, re.IGNORECASE)
+        if between_match and " and " in cleaned_core.lower():
+            opt1, opt2 = between_match.group(1).strip(), between_match.group(2).strip()
+            if 0 < len(opt1.split()) <= 8 and 0 < len(opt2.split()) <= 8:
+                return ([opt1, opt2], True, "choice")
+
+        # 3. Regex pattern: "Should I X or Y?" or "X or Y?"
+        or_match = re.search(r"^(?:should\s+(?:i|we)\s+)?(.+?)\s+or\s+(.+?)(?:\s+(?:for|in|tonight).*)?$", cleaned_core, re.IGNORECASE)
         if or_match:
             opt1 = re.sub(r"^(?:choose|pick|prefer|decide between)\s+", "", or_match.group(1).strip(), flags=re.IGNORECASE)
             opt2 = or_match.group(2).strip()
-            if len(opt1.split()) <= 10 and len(opt2.split()) <= 10:
+            if len(opt1.split()) <= 8 and len(opt2.split()) <= 8:
                 return ([opt1, opt2], True, "choice")
 
-        # 3. Check for yes/no / approval questions (noul)
-        if re.search(r"^(?:should\s+(?:i|we)|is\s+it\s+(?:good|safe|worth|time)|can\s+(?:i|we))\b", cleaned, re.IGNORECASE):
+        # 4. Check for yes/no / approval questions (noul)
+        if re.search(r"^(?:should\s+(?:i|we)|is\s+it\s+(?:good|safe|worth|time)|can\s+(?:i|we))\b", cleaned_core, re.IGNORECASE):
             return (["Yes, proceed", "No, hold off"], True, "noul")
 
-        # Default fallback
-        return ([], True, "general_decision")
+        # If options cannot be determined directly via regex, escalate to LLM (System 2) to dynamically extract them
+        return ([], False, "general_decision")
 
     def triage_query(self, text: str) -> QueryTriage:
         text_lower = text.lower().strip()
@@ -80,12 +102,14 @@ class TalkOrchestrator:
         is_decision = bool(options) or (not is_self_contained) or any(re.search(pat, text_lower) for pat in decision_patterns)
         
         if is_decision:
-            filler = "Locking in decision variables..." if is_self_contained else "Researching real-time context..."
+            # Self-contained ONLY when candidate options are successfully identified
+            can_run_system1 = bool(options and is_self_contained)
+            filler = "Locking in decision variables..." if can_run_system1 else "Analyzing options and context..."
             return QueryTriage(
                 intent="decision",
                 reasoning="Comparative evaluation or dilemma choice request.",
                 suggested_filler=filler,
-                is_self_contained=is_self_contained,
+                is_self_contained=can_run_system1,
                 detected_options=options if options else None
             )
             
@@ -97,17 +121,30 @@ class TalkOrchestrator:
         )
 
     def _generate_verdict_flavor(self, confidence: float) -> str:
+        threshold = self.classification_svc.settings.hedging_threshold
         if confidence >= 0.90:
             return "Absolute No-Brainer"
-        elif confidence >= 0.78:
+        elif confidence >= threshold:
             return "Decisive Winner"
-        elif confidence >= 0.65:
+        elif confidence >= threshold - 0.13:
             return "Close Call / Leaning"
         else:
             return "Toss-Up / High Dilemma"
 
-    def _generate_xyz_reasoning(self, winner: str, loser: str, query: str) -> List[str]:
-        """Generates 3 fast, tailored xyz reasoning pillars for why Laya chose the winner."""
+    def _generate_xyz_reasoning(self, winner: str, loser: str, query: str, matched_rule: Optional[ClassificationRule] = None) -> List[str]:
+        """Generates 3 fast, tailored xyz reasoning pillars grounded in user rules or domain heuristics."""
+        if matched_rule and matched_rule.criteria and len(matched_rule.criteria) > 0:
+            pillars = []
+            for idx, crit in enumerate(matched_rule.criteria[:3]):
+                if idx == 0:
+                    pillars.append(f"{crit}: Under '{matched_rule.name}', {winner} demonstrates superior alignment and performance over {loser}.")
+                elif idx == 1:
+                    pillars.append(f"{crit}: Quantifiable edge in efficiency and lower friction relative to {loser}.")
+                else:
+                    guidance = matched_rule.steering_prompt[:65].rstrip(".")
+                    pillars.append(f"{crit}: Confirmed advantage adhering to configured rule ({guidance}).")
+            return pillars
+
         w_lower = winner.lower()
         q_lower = query.lower()
         
@@ -145,6 +182,7 @@ class TalkOrchestrator:
 
     async def process_turn(self, req: TalkRequest) -> TalkResponse:
         start_time = time.perf_counter()
+        matched_rule = self.classification_svc.find_matching_rule(req.text)
         triage = self.triage_query(req.text)
 
         # If document text is attached, ensure it is treated as a grounded decision
@@ -174,9 +212,9 @@ class TalkOrchestrator:
 
         # 2. FAST SYSTEM 1 PATH (Laya-First, <50ms)
         # When choices are extracted and no external web research is demanded
-        if triage.is_self_contained:
+        if triage.is_self_contained and (triage.detected_options or req.document_text):
             fast_start = time.perf_counter()
-            options = triage.detected_options or ["Option Alpha", "Option Beta"]
+            options = triage.detected_options or ["Option A", "Option B"]
             
             # Incorporate document context into state if present
             if req.document_text:
@@ -186,11 +224,15 @@ class TalkOrchestrator:
             else:
                 state_str = f"Decision inquiry: '{req.text}'. Evaluated candidate options: {', '.join(options)}."
 
+            if matched_rule:
+                state_str += f"\nActive User Rule Applied: '{matched_rule.name}' (Priority {matched_rule.priority}). Guidance: {matched_rule.steering_prompt}"
+
             framed = LayaFramedQuestion(
-                question_type="choice",
+                question_type=matched_rule.decision_type if matched_rule else "choice",
                 state=state_str,
                 question=f"Which choice is superior: {options[0]} or {options[1] if len(options) > 1 else 'alternatives'}?",
-                options=options
+                options=options,
+                criteria=matched_rule.criteria if matched_rule else None
             )
 
             # Laya direct execution
@@ -217,21 +259,24 @@ class TalkOrchestrator:
                     f"Downside Protection: Lower execution risk and fewer hidden compromises compared to {loser} under documented constraints."
                 ]
             else:
-                pillars = self._generate_xyz_reasoning(winner, loser, req.text)
+                pillars = self._generate_xyz_reasoning(winner, loser, req.text, matched_rule=matched_rule)
 
             laya_res.reasoning_pillars = pillars
 
-            # Punchy Spoken Personality
+            # Punchy Spoken Personality with Dynamic XYZ Reasoning
             conf_int = int(laya_res.confidence * 100)
             doc_mention = f"Based on '{req.document_name}', " if req.document_name else ""
+            rule_mention = f"Under your '{matched_rule.name}' basis, " if matched_rule else ""
+            primary_reason = pillars[0].split(':')[-1].strip().rstrip('.') if pillars else "it maximizes net expected value"
+            
             if flavor == "Absolute No-Brainer":
-                spoken = f"{doc_mention}{winner}! It's an absolute no-brainer at {conf_int}% confidence. Go with {winner} and don't look back."
+                spoken = f"{doc_mention}{rule_mention}{winner}! It's an absolute no-brainer at {conf_int}% confidence. {primary_reason}."
             elif flavor == "Decisive Winner":
-                spoken = f"{doc_mention}I decide in favor of {winner}. At {conf_int}% confidence, it decisively edges out {loser} based on higher payoff and lower friction."
+                spoken = f"{doc_mention}{rule_mention}I decide in favor of {winner}. At {conf_int}% confidence, it decisively edges out {loser} because {primary_reason.lower()}."
             elif flavor == "Close Call / Leaning":
-                spoken = f"{doc_mention}This is a close call, but I'm leaning toward {winner} with {conf_int}% confidence. It takes the lead on execution and satisfaction."
+                spoken = f"{doc_mention}{rule_mention}This is a close call, but I'm leaning toward {winner} with {conf_int}% confidence. Key reason: {primary_reason}."
             else:
-                spoken = f"{doc_mention}It's a genuine toss-up at {conf_int}%, but {winner} holds a slight edge. Commit to {winner} to break the deadlock."
+                spoken = f"{doc_mention}{rule_mention}It's a genuine toss-up at {conf_int}%, but {winner} holds the edge. {primary_reason}."
 
             # Build Visual Decision Card
             items = []
@@ -265,7 +310,7 @@ class TalkOrchestrator:
                     url=None
                 ))
 
-            subtitle_text = f"Document Grounded ({req.document_name}) • {flavor}" if req.document_name else f"Instant Calibrated Decision ({flavor})"
+            subtitle_text = f"Evaluated under basis '{matched_rule.name}'" if matched_rule else (f"Document Grounded ({req.document_name}) • {flavor}" if req.document_name else f"Instant Calibrated Decision ({flavor})")
 
             visual_payload = VisualPayload(
                 type="choice_matrix",
@@ -273,8 +318,9 @@ class TalkOrchestrator:
                 subtitle=subtitle_text,
                 decision_badge=winner.upper(),
                 confidence=laya_res.confidence,
-                summary=f"Laya selects {winner} with {conf_int}% calibrated confidence based on {req.document_name or 'dilemma criteria'}.",
+                summary=f"Laya selects {winner} with {conf_int}% calibrated confidence based on {matched_rule.name if matched_rule else (req.document_name or 'dilemma criteria')}.",
                 verdict_flavor=flavor,
+                basis_name=matched_rule.name if matched_rule else None,
                 reasoning_pillars=pillars,
                 items=items,
                 citations=doc_citations
@@ -318,7 +364,7 @@ class TalkOrchestrator:
             query_text=req.text,
             conn=active_conn,
             pilot_domain=req.pilot_domain,
-            criteria_pref=req.criteria_preference
+            criteria_pref=matched_rule.criteria if matched_rule else req.criteria_preference
         )
         framing_latency_ms = (time.perf_counter() - framing_start) * 1000.0
 
@@ -354,6 +400,7 @@ class TalkOrchestrator:
         
         visual_payload.verdict_flavor = flavor
         visual_payload.reasoning_pillars = pillars
+        visual_payload.basis_name = matched_rule.name if matched_rule else None
 
         total_latency = (time.perf_counter() - start_time) * 1000.0
 

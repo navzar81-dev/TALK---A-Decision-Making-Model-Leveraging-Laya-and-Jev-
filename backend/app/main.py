@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, Response
 from .models import (
     TalkRequest, TalkResponse, LLMConnection, ConnectionTestRequest, ConnectionTestResponse,
-    LayaFramedQuestion, LayaDecisionResult, VoiceSpeakRequest, VoiceAuditionRequest
+    LayaFramedQuestion, LayaDecisionResult, VoiceSpeakRequest, VoiceAuditionRequest,
+    ClassificationRule, ClassificationSettings, RuleSuggestionRequest, RuleSuggestionResponse
 )
 from .laya_service import LayaService
 from .llm_manager import LLMManager
@@ -148,3 +149,39 @@ async def audition_voice(req: VoiceAuditionRequest):
         return Response(content=audio_bytes, media_type="audio/mpeg")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Voice audition failed: {e}")
+
+# Dynamic Classification & Decision Steering Endpoints
+@app.get("/api/classification/rules", response_model=ClassificationSettings)
+async def get_classification_rules():
+    return orchestrator.classification_svc.get_settings()
+
+@app.post("/api/classification/rules")
+async def save_classification_rule(rule: ClassificationRule):
+    try:
+        updated = orchestrator.classification_svc.save_rule(rule)
+        return {"success": True, "rule": rule, "settings": updated}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save rule: {e}")
+
+@app.delete("/api/classification/rules/{rule_id}")
+async def delete_classification_rule(rule_id: str):
+    success = orchestrator.classification_svc.delete_rule(rule_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    return {"success": True, "rule_id": rule_id}
+
+@app.post("/api/classification/settings")
+async def update_classification_settings(settings: ClassificationSettings):
+    try:
+        updated = orchestrator.classification_svc.update_settings(settings)
+        return {"success": True, "settings": updated}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update settings: {e}")
+
+@app.post("/api/classification/suggest", response_model=RuleSuggestionResponse)
+async def suggest_classification_rule(req: RuleSuggestionRequest):
+    try:
+        suggestion = await orchestrator.classification_svc.suggest_rule(req.query, llm_mgr)
+        return suggestion
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Suggestion generation failed: {e}")

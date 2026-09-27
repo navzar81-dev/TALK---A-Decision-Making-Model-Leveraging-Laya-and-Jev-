@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap');
 
 :root {
-  --bg-core: #06070a;
-  --bg-surface: rgba(14, 18, 27, 0.75);
-  --bg-surface-elevated: rgba(22, 28, 42, 0.85);
+  --bg-core: #040508;
+  --bg-surface: rgba(13, 17, 26, 0.75);
+  --bg-surface-elevated: rgba(19, 25, 38, 0.85);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(0, 240, 255, 0.25);
 
@@ -13,13 +13,24 @@
   --accent-amber: #ffb700;
   --accent-crimson: #ff3366;
 
+  --gold-sovereign: #ffc83b;
+  --gold-glow: rgba(255, 200, 59, 0.25);
+  --cyan-calibrated: #00f0ff;
+  --cyan-glow: rgba(0, 240, 255, 0.35);
+  --amethyst-system: #a855f7;
+
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-tertiary: #64748b;
 
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-specular: rgba(255, 255, 255, 0.18);
+
+  --font-display: 'Syne', 'Plus Jakarta Sans', sans-serif;
   --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
+
 
 * {
   box-sizing: border-box;

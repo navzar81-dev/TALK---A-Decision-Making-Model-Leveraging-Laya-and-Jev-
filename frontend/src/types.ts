@@ -27,6 +27,7 @@ export interface VisualPayload {
   summary: string;
   verdict_flavor?: string;
   reasoning_pillars?: string[];
+  basis_name?: string;
   items: VisualItem[];
   citations: Citation[];
 }
@@ -134,5 +135,38 @@ export interface ParsedDocument {
   word_count: number;
   extracted_text: string;
   summary_snippets: string[];
+}
+
+export interface ClassificationRule {
+  id: string;
+  name: string;
+  priority: number;
+  domain_keywords: string[];
+  decision_type: 'choice' | 'multi_criteria' | 'noul' | 'score';
+  criteria: string[];
+  steering_prompt: string;
+  requires_research: boolean;
+  is_active: boolean;
+}
+
+export interface ClassificationSettings {
+  risk_tolerance: 'conservative' | 'balanced' | 'aggressive';
+  hedging_threshold: number;
+  rules: ClassificationRule[];
+}
+
+export interface RuleSuggestionRequest {
+  query: string;
+}
+
+export interface RuleSuggestionResponse {
+  name: string;
+  domain_keywords: string[];
+  decision_type: 'choice' | 'multi_criteria' | 'noul' | 'score';
+  criteria: string[];
+  steering_prompt: string;
+  priority: number;
+  requires_research: boolean;
+  reasoning: string;
 }
 
