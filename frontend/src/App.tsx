@@ -57,6 +57,7 @@ export const App: React.FC = () => {
 
   const audioEngine = useRef(new AudioEngine()).current;
   const recognitionRef = useRef<any>(null);
+  const latestTranscriptRef = useRef<string>('');
   const levelLoopRef = useRef<number | null>(null);
 
   // Fetch initial connection configs and voice providers
@@ -105,47 +106,79 @@ export const App: React.FC = () => {
     }
   };
 
-  const startListening = async () => {
+  const startListening = () => {
     // Interrupt any ongoing speech (Barge-in)
     audioEngine.cancelSpeech();
-    await audioEngine.initMic();
+
+    // Reset transcript reference buffer to prevent stale closure reads
+    latestTranscriptRef.current = '';
+    setTranscript('Listening...');
     setIsMicActive(true);
     setOrbState('listening');
-    setTranscript('Listening...');
+
+    // Initialize audio level visualizer non-blockingly so speech recognition starts immediately
+    audioEngine.initMic().catch((e) => console.warn('Mic visualizer init:', e));
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+      }
+
       const rec = new SpeechRecognition();
       rec.continuous = false;
       rec.interimResults = true;
       rec.lang = 'en-US';
 
+      rec.onstart = () => {
+        setIsMicActive(true);
+        setOrbState('listening');
+      };
+
       rec.onresult = (event: any) => {
-        const current = event.resultIndex;
-        const text = event.results[current][0].transcript;
-        setTranscript(text);
+        let fullTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript;
+        }
+        const trimmed = fullTranscript.trim();
+        latestTranscriptRef.current = trimmed;
+        setTranscript(trimmed);
       };
 
       rec.onerror = (event: any) => {
         console.warn('Speech recognition error:', event.error);
-        if (event.error === 'no-speech') {
+        if (event.error === 'no-speech' && !latestTranscriptRef.current) {
           setOrbState('unsure');
-          setTimeout(() => setOrbState('idle'), 2500);
+          setTimeout(() => setOrbState('idle'), 2200);
         }
       };
 
       rec.onend = () => {
         audioEngine.stopMic();
         setIsMicActive(false);
-        if (transcript && transcript !== 'Listening...') {
-          executeDecisionPipeline(transcript);
+        const queryToProcess = latestTranscriptRef.current.trim();
+        if (queryToProcess && queryToProcess !== 'Listening...') {
+          executeDecisionPipeline(queryToProcess);
         } else {
           setOrbState('idle');
         }
       };
 
       recognitionRef.current = rec;
-      rec.start();
+      try {
+        rec.start();
+      } catch (err) {
+        console.warn('Error starting speech recognition:', err);
+        setIsMicActive(false);
+        setOrbState('idle');
+      }
+    } else {
+      console.warn('SpeechRecognition API not available in this browser.');
+      setIsMicActive(false);
+      setOrbState('idle');
+      setTranscript('Speech recognition is not supported in this browser. Please use text input.');
     }
   };
 
@@ -157,11 +190,16 @@ export const App: React.FC = () => {
     }
     audioEngine.stopMic();
     setIsMicActive(false);
-    setOrbState('idle');
   };
 
   // Immediate Barge-in Cancellation
   const handleBargeIn = () => {
+    latestTranscriptRef.current = '';
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+    }
     audioEngine.cancelSpeech();
     audioEngine.stopMic();
     setIsMicActive(false);
