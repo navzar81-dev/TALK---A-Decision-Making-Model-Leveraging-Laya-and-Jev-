@@ -1,4 +1,4 @@
-# 🎙️ TALK — A Decision Making Model Leveraging Laya and JEV.AI
+# 🎙️ TALK — A Decision Making Model Leveraging Laya (Jev AI under development)
 
 <p align="center">
   <img src="docs/assets/talk-main-decision.png" alt="TALK Decision OS Interface" width="850" style="border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);" />
